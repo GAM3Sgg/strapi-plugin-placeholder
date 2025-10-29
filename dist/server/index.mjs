@@ -18,7 +18,17 @@ const bootstrap = ({ strapi }) => {
   const generatePlaceholder = async (event) => {
     const { data, where } = event.params;
     if (!data.url || !data.mime || !data.hash || !data.ext) {
-      const file = await strapi.documents("plugin::upload.file").findOne(where.id);
+      if (!data.documentId && !where?.documentId) {
+        strapi.log.debug(`No documentId provided for placeholder generation`);
+        return;
+      }
+      const file = await strapi.documents("plugin::upload.file").findOne({
+        documentId: data.documentId || where.documentId
+      });
+      if (!file) {
+        strapi.log.debug(`File not found for placeholder generation (documentId: ${data.documentId || where?.documentId})`);
+        return;
+      }
       data.url = data.url ?? file.url;
       data.mime = data.mime ?? file.mime;
       data.hash = data.hash ?? file.hash;
